@@ -8,14 +8,16 @@ def post_request(sqlpp_query: str) -> Response:
 
 
     payload: dict = {
-        "query": sqlpp_query,
-        "query-language": "SQL++",
-        "output-format": "CLEAN_JSON",
-        "plan-format": "JSON",
-        "execute-query": "true"
+        "statement": sqlpp_query,
+        "format": "json",
+        "mode": "immediate"
     }
-    headers: dict = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
+    headers: dict = {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "application/json"
+    }
+
     response: Response = post(DATABASE_URL, data=payload, headers=headers)
-    
     response.raise_for_status()
+    
     return response
