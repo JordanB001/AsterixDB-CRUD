@@ -24,8 +24,3 @@ if not DATABASE_PORT.isdigit():
 if not DATAVERSE:
     raise RuntimeError("DATAVERSE environment variable is not set")
 
-
-
-#############
-
-DATABASE_URL: str = f"http://{DATABASE_HOST}:{DATABASE_PORT}/query/service"
