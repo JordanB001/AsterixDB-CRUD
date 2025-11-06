@@ -2,18 +2,46 @@ from requests import Response, Session, post
 
 
 class Asterixdb:
-    def __init__(self, database_host: str, database_port: str) -> None:
+    def __init__(self, database_host: str, database_port: str, pretty: bool=False, dataverse: str="Default", client_context_id: str | None=None, mode: str="immediate", readonly: bool=False) -> None:
         if not isinstance(database_host, str):
             raise TypeError("database_host must be a string")
         
         if not isinstance(database_port, str):
             raise TypeError("database_port must be a string")
 
+        if not isinstance(pretty, bool):
+            raise TypeError("pretty must be a boolean")
 
+        if not isinstance(dataverse, str):
+            raise TypeError("dataverse must be a string")
+
+        if client_context_id is not None and not isinstance(client_context_id, str):
+            raise TypeError("client_context_id must be a string or None")
+
+        if not isinstance(mode, str):
+            raise TypeError("mode must be a string")
+        if mode not in ["immediate", "deferred", "async"]:
+            raise ValueError("mode must be one of: 'immediate', 'deferred', or 'async'")
+
+        if not isinstance(readonly, bool):
+            raise TypeError("readonly must be a boolean")
+
+
+        # Session parameters
         self.database_url: str = f"http://{database_host}:{database_port}/query/service"
-        self.dataverse: str = ""
-
         self.connexion: Session = self.asterixdb_connexion()
+
+
+        # Payload parameters
+        self.payload: dict = {
+            "pretty": "true" if pretty else "false",
+            "dataverse": dataverse,
+            "mode": mode,
+            "readonly": "true" if readonly else "false"
+        }
+
+        if client_context_id:
+            self.payload["client_context_id"] = client_context_id
 
 
     def asterixdb_connexion(self) -> Session:
@@ -34,13 +62,9 @@ class Asterixdb:
             raise TypeError("sqlpp_query must be a string")
 
 
-        payload: dict = {
-            "statement": sqlpp_query,
-            "format": "json",
-            "mode": "immediate"
-        }
-
-        response: Response = self.connexion.post(self.database_url, data=payload)
+        self.payload["statement"] = sqlpp_query
+        
+        response: Response = self.connexion.post(self.database_url, data=self.payload)
         response.raise_for_status()
         
         return response
@@ -55,11 +79,7 @@ class Asterixdb:
             print(f"Dataverse {dataverse_name} don't exists")
             return False
 
-        sqlpp_query: str = f"USE {dataverse_name}"
-        response: Response = self.post_request(sqlpp_query=sqlpp_query)
-
-        if response.json()["status"] != "success":
-            return False
+        self.payload["dataverse"] = dataverse_name
 
         return True
 
